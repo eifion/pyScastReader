@@ -83,10 +83,12 @@ class Scast:
   
       
   def save(self):
-    conn = psycopg2.connect("dbname=pyppm user=pyppm")
+    conn = psycopg2.connect("dbname=pyppm user=pyppm password=PyPPM")
     cur = conn.cursor()
+    identifier = ''.join([chr(ord(c)) for c in self.unit_identifier.decode('hex')])
+    print "Unit name: {0}. Unit identifier: {1}".format(self.unit_name, identifier)
     for reading in self.readings:
-      cur.execute("SELECT Addreading(%s, %s, %s, %s, %s);", (self.unit_name, '00', self.unit_identifier, reading.sensor_id, reading.reading_values)
+      cur.execute("SELECT \"AddReading\"(%s, %s, %s, %s);", (self.unit_name, identifier, reading.sensor_id, reading.reading_value))
       print "Sensor id:{0}. Reading value: {1}".format(reading.sensor_id, reading.reading_value)
     conn.commit()
     cur.close()

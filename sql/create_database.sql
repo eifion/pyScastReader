@@ -54,7 +54,7 @@ SET search_path = public, pg_catalog;
 -- Name: AddReading(character, character, character, integer, numeric); Type: FUNCTION; Schema: public; Owner: pyppm
 --
 
-CREATE FUNCTION "AddReading"(unitname character, unittype character, unitidentifier character, sensortypeid integer, reading numeric) RETURNS integer
+CREATE FUNCTION "AddReading"(unitname character, unitidentifier character, sensortypeid integer, reading numeric) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 DECLARE 
@@ -66,11 +66,11 @@ BEGIN
   _current_time := current_timestamp; -- So that all times are the same.
   _unit_id := id 
   FROM units
-  WHERE "name" = unitname AND "type" = unittype AND "identifier" = unitidentifier;
+  WHERE "name" = unitname AND "identifier" = unitidentifier;
 
   IF _unit_id IS NULL THEN
-    INSERT INTO Units("name", "type", "identifier", "created_at", "last_modified_at")
-    VALUES(unitname, unittype, unitidentifier, _current_time, _current_time)
+    INSERT INTO Units("name", "identifier", "created_at", "last_modified_at")
+    VALUES(unitname, unitidentifier, _current_time, _current_time)
     RETURNING id INTO _unit_id;
   ELSE
     UPDATE units
@@ -103,7 +103,7 @@ END
 $$;
 
 
-ALTER FUNCTION public."AddReading"(unitname character, unittype character, unitidentifier character, sensortypeid integer, reading numeric) OWNER TO pyppm;
+ALTER FUNCTION public."AddReading"(unitname character, unitidentifier character, sensortypeid integer, reading numeric) OWNER TO pyppm;
 
 SET default_tablespace = '';
 
@@ -205,9 +205,8 @@ ALTER SEQUENCE sensors_id_seq OWNED BY sensors.id;
 
 CREATE TABLE units (
     id integer NOT NULL,
-    name character(16) NOT NULL,
-    type character(2) NOT NULL,
-    identifier character(6) NOT NULL,
+    name character(10) NOT NULL,
+    identifier character(16) NOT NULL,
     created_at timestamp with time zone NOT NULL,
     last_modified_at timestamp with time zone NOT NULL
 );

@@ -2,7 +2,7 @@ from scast_buffer import *
 import time
 import serial
 
-PORT_NAME = '/dev/tty.SLAB_USBtoUART'
+PORT_NAME = '/dev/ttyUSB0'
 BAUD_RATE = 19200
 
 ser = serial.Serial(
