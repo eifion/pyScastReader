@@ -1,5 +1,6 @@
 from datetime import *
 from scast_reading import *
+import psycopg2
 
 class Scast:
   
@@ -17,7 +18,7 @@ class Scast:
   #  72 - 79: 03 28 4a 42                                             The first byte of each set is the SensorId; the last three bytes are reading data.
   #                                                                   See ScastReading for how the readings are calculated
   
-  COMMA_TOKEN                     = '2c'
+  COMMA_TOKEN                   = '2c'
 
   UNIT_ID_START_POS             = 12
   UNIT_ID_END_POS               = 44
@@ -33,8 +34,8 @@ class Scast:
   RELAY_COUNT_END               = 62
   RELAY_STATE_START             = 62
   RELAY_STATE_END               = 64
-  READING_DATA_START              = 64
-  READING_DATA_LENGTH             =  8  
+  READING_DATA_START            = 64
+  READING_DATA_LENGTH           =  8  
   
   def __init__(self, hex_data):
     self.hex_data = hex_data
@@ -82,7 +83,14 @@ class Scast:
   
       
   def save(self):
-    print "Unit is {0}".format(self.unit_name)
+    conn = psycopg2.connect("dbname=pyppm user=pyppm")
+    cur = conn.cursor()
     for reading in self.readings:
+      cur.execute("SELECT Addreading(%s, %s, %s, %s, %s);", (self.unit_name, '00', self.unit_identifier, reading.sensor_id, reading.reading_values)
       print "Sensor id:{0}. Reading value: {1}".format(reading.sensor_id, reading.reading_value)
-    
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+
