@@ -1,8 +1,17 @@
 from scast_buffer import *
+import glob
 import time
 import serial
 
-PORT_NAME = '/dev/ttyUSB0'
+matching_units = glob.glob('/dev/serial/by-id/*')
+if matching_units:
+  PORT_NAME = matching_units[0]
+  print "USB device found: " + PORT_NAME
+else:
+  print "No devices found, exiting."
+  exit()
+
+
 BAUD_RATE = 19200
 
 ser = serial.Serial(
