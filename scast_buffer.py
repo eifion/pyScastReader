@@ -15,10 +15,10 @@ class ScastBuffer:
     
   def add(self, char):
     self.buffer += char
-    self.process_buffer()
+    return self.process_buffer()
     
   def process_buffer(self):
-    print "Process buffer. Buffer is ", len(self.buffer)
+    processed_reading = False
     while True:
       start = self.buffer.find(self.SCAST_TOKEN)
       if start == -1:
@@ -37,4 +37,6 @@ class ScastBuffer:
 
       scast = Scast(self.buffer[:scast_length])
       self.buffer = self.buffer[scast_length:]
+      processed_reading = True
+    return processed_reading
 

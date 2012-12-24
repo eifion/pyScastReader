@@ -41,7 +41,6 @@ class Scast:
     self.hex_data = hex_data
     self.readings = []
     self_received_at = datetime.now()
-    print "Hex data: " + hex_data
     if self.process():
       self.save()
       
@@ -86,10 +85,8 @@ class Scast:
     conn = psycopg2.connect("dbname=pyppm user=pyppm password=PyPPM")
     cur = conn.cursor()
     identifier = ''.join([chr(ord(c)) for c in self.unit_identifier.decode('hex')])
-    print "Unit name: {0}. Unit identifier: {1}".format(self.unit_name, identifier)
     for reading in self.readings:
       cur.execute("SELECT \"AddReading\"(%s, %s, %s, %s);", (self.unit_name, identifier, reading.sensor_id, reading.reading_value))
-      print "Sensor id:{0}. Reading value: {1}".format(reading.sensor_id, reading.reading_value)
     conn.commit()
     cur.close()
     conn.close()
