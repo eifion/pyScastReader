@@ -21,6 +21,7 @@ class SerialPort:
       sleep(1)
 
   def process_alarms_and_relays(self):
+    print "process_alarms_and_relays called"
     # Read alarms from alarms table, compare with last readings
     # If any are in an alarm state update database table????
     # Can this all be done in a sproc?
