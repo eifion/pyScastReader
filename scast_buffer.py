@@ -18,6 +18,7 @@ class ScastBuffer:
     self.process_buffer()
     
   def process_buffer(self):
+    print "Process buffer. Buffer is ", len(self.buffer)
     while True:
       start = self.buffer.find(self.SCAST_TOKEN)
       if start == -1:
@@ -34,6 +35,6 @@ class ScastBuffer:
       if len(self.buffer) < scast_length:
         break
 
-      scast = self.buffer[:scast_length]
+      scast = Scast(self.buffer[:scast_length])
       self.buffer = self.buffer[scast_length:]
 
