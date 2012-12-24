@@ -4,6 +4,11 @@ class ScastBuffer:
 
   SCAST_TOKEN = '53434153543a'
   CR_LF       = '0d0a'
+
+  READING_COUNT_START           = 46
+  READING_COUNT_END             = 50
+  READING_DATA_START            = 64
+  READING_DATA_LENGTH           =  8 
   
   def __init__(self):
     self.buffer = ""
@@ -14,18 +19,18 @@ class ScastBuffer:
     
   def process_buffer(self):
     while True:
-      start = self.buffer.find(SCAST_TOKEN)
+      start = self.buffer.find(self.SCAST_TOKEN)
       if start == -1:
         break
 
       self.buffer = self.buffer[start:]
-      if len(self.buffer) < READING_COUNT_END:
+      if len(self.buffer) < self.READING_COUNT_END:
         break
 
-      reading_data_length = int(self.buffer[READING_COUNT_START:READING_COUNT_END].decode('hex'), 16)
+      reading_data_length = int(self.buffer[self.READING_COUNT_START:self.READING_COUNT_END].decode('hex'), 16)
       reading_count = (reading_data_length - 6) / 4
 
-      scast_length = READING_DATA_START + (READING_DATA_LENGTH * reading_count)
+      scast_length = self.READING_DATA_START + (self.READING_DATA_LENGTH * reading_count)
       if len(self.buffer) < scast_length:
         break
 
