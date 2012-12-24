@@ -10,9 +10,9 @@ class ScastBuffer:
     
   def add(self, char):
     self.buffer += char
-    self.processself.buffer()
+    self.process_buffer()
     
-  def processself.buffer(self):
+  def process_buffer(self):
 	  while True:
   		start = self.buffer.find(SCAST_TOKEN)
   		if start == -1:
