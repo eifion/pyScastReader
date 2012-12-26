@@ -14,10 +14,11 @@ class SerialPort:
 
     buffer = ScastBuffer()
     while 1:
+      chars = ""
       while self.ser.inWaiting() > 0:
-        chars = self.ser.read(1).encode('hex')
-        if buffer.add(chars):
-          self.process_alarms_and_relays()
+        chars += self.ser.read(1).encode('hex')
+      if buffer.add(chars):
+        self.process_alarms_and_relays()
       sleep(1)
 
   def process_alarms_and_relays(self):
