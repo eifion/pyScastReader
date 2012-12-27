@@ -32,7 +32,7 @@ class ScastBuffer:
         break
 
       # If no comma found then the unit hasn't reported its readings so discard this SCAST.
-      if self.buffer[self.COMMA_START:self.COMMA_END] != COMMA:
+      if self.buffer[self.COMMA_START:self.COMMA_END] != self.COMMA:
         self.buffer = self.buffer[self.READING_COUNT_END]
         break
 
