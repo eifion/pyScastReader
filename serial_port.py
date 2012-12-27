@@ -1,4 +1,5 @@
 from time import sleep
+import psycopg2
 import serial
 from scast_buffer import *
 
@@ -14,18 +15,20 @@ class SerialPort:
 
     buffer = ScastBuffer()
     while 1:
+      chars = ""
       while self.ser.inWaiting() > 0:
-        chars = self.ser.read(1).encode('hex')
-        if buffer.add(chars):
-          self.process_alarms_and_relays()
+        chars += self.ser.read(1).encode('hex')
+      if buffer.add(chars):
+        self.process_alarms_and_relays()
       sleep(1)
 
   def process_alarms_and_relays(self):
-    print "process_alarms_and_relays called"
-    # Read alarms from alarms table, compare with last readings
-    # If any are in an alarm state update database table????
-    # Can this all be done in a sproc?
-    # Set any relays that need to be set....
-    #print "sending!"
-    #self.ser.write('AT+UCAST:000D6F000178CDF4,00FF')
-    #print "sent."
+    conn = psycopg2.connect("dbname=pyppm user=pyppm password=PyPPM")
+    cur = conn.cursor()
+    cur.execute('SELECT * FROM "GetRelayStates"()')
+    for record in cur:
+      self.ser.write("AT+UCAST:%s,00%0.2X\r\n" % (record[0], record[1]))
+    conn.commit()
+    cur.close()
+    conn.close()
+

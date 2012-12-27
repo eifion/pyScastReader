@@ -86,7 +86,7 @@ class Scast:
     cur = conn.cursor()
     identifier = ''.join([chr(ord(c)) for c in self.unit_identifier.decode('hex')])
     for reading in self.readings:
-      cur.execute("SELECT \"AddReading\"(%s, %s, %s, %s);", (self.unit_name, identifier, reading.sensor_id, reading.reading_value))
+      cur.execute("SELECT \"AddReading\"(%s, %s, %s, %s, %s, %s);", (self.unit_name, identifier, self.relay_count, self.relay_state, reading.sensor_id, reading.reading_value))
     conn.commit()
     cur.close()
     conn.close()
