@@ -4,7 +4,10 @@ class ScastBuffer:
 
   SCAST_TOKEN = '53434153543a'
   CR_LF       = '0d0a'
+  COMMA       = '2c'
 
+  COMMA_START                   = 44
+  COMMA_END                     = 46
   READING_COUNT_START           = 46
   READING_COUNT_END             = 50
   READING_DATA_START            = 64
@@ -26,6 +29,11 @@ class ScastBuffer:
 
       self.buffer = self.buffer[start:]
       if len(self.buffer) < self.READING_COUNT_END:
+        break
+
+      # If no comma found in the right place then the SCAST doesn't have readings so discard the data.
+      if self.buffer[self.COMMA_START:self.COMMA_END] != COMMA:
+        self.buffer = self.buffer[self.READING_COUNT_END:]
         break
 
       reading_data_length = int(self.buffer[self.READING_COUNT_START:self.READING_COUNT_END].decode('hex'), 16)
