@@ -36,9 +36,11 @@ class ScastBuffer:
         self.log_error("Buffer not long enough for reading count ({0} chars).".format(len(self.buffer)))
         break
 
-      # If no comma found then the unit hasn't reported its readings so discard this SCAST.
+      # If no comma found then the unit hasn't reported its readings so discard this line of data.
       if self.buffer[self.COMMA_START:self.COMMA_END] != self.COMMA:
-        self.buffer = self.buffer[self.READING_COUNT_END:]
+        next_crlf =  self.buffer.find(self.CR_LF)
+        if (next_crlf) != -1:
+          self.buffer = self.buffer[next_crlf + 4]
         self.log_error("Comma token not found.")
         break
 
