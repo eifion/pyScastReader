@@ -1,4 +1,5 @@
 from datetime import *
+from os.path import expanduser
 from scast_reading import *
 import psycopg2
 
@@ -38,10 +39,12 @@ class Scast:
   READING_DATA_LENGTH           =  8  
   
   def __init__(self, hex_data):
+    self.log_directory = expanduser("~/ppm")
     self.hex_data = hex_data
     self.readings = []
     self_received_at = datetime.now()
     if self.process():
+      self.log()
       self.save()
       
   def process(self):
@@ -79,17 +82,26 @@ class Scast:
 
     unit_serial_number = str(int(self.hex_data[self.UNIT_SERIAL_NUMBER_START:self.UNIT_SERIAL_NUMBER_END], 16)).rjust(8, '0')
     return unit_code_name + unit_serial_number
-  
-      
+
+  def log(self):
+    log_time = datetime.now()
+    with open("{}/{:%Y%m%d}.txt".format(self.log_directory, log_time), 'a+') as f:
+      f.write("SCAST data: {0}\n".format(self.hex_data))
+      f.write("Relay state: {0}\n".format(self.relay_state))
+      for reading in self.readings:
+        f.write("Sensor id {0}\t{1}\n".format(reading.sensor_id, reading.reading_value))  
+
   def save(self):
     conn = psycopg2.connect("dbname=pyppm user=pyppm password=PyPPM")
     cur = conn.cursor()
-    identifier = ''.join([chr(ord(c)) for c in self.unit_identifier.decode('hex')])
     for reading in self.readings:
-      cur.execute("SELECT \"AddReading\"(%s, %s, %s, %s, %s, %s);", (self.unit_name, identifier, self.relay_count, self.relay_state, reading.sensor_id, reading.reading_value))
+      cur.execute("SELECT \"AddReading\"(%s, %s, %s, %s, %s, %s);", (self.unit_name, self.identifier(), self.relay_count, self.relay_state, reading.sensor_id, reading.reading_value))
     conn.commit()
     cur.close()
     conn.close()
+
+  def identifier(self):
+    return ''.join([chr(ord(c)) for c in self.unit_identifier.decode('hex')])
 
 
 

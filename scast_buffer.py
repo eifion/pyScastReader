@@ -1,5 +1,6 @@
 from scast import *
 
+
 class ScastBuffer:
 
   SCAST_TOKEN = '53434153543a'
@@ -15,6 +16,7 @@ class ScastBuffer:
   
   def __init__(self):
     self.buffer = ""
+    self.log_directory = expanduser("~/ppm")
     
   def add(self, char):
     self.buffer += char
@@ -22,6 +24,7 @@ class ScastBuffer:
     
   def process_buffer(self):
     processed_reading = False
+    self.log_buffer('before')
     while True:
       start = self.buffer.find(self.SCAST_TOKEN)
       if start == -1:
@@ -45,6 +48,19 @@ class ScastBuffer:
 
       scast = Scast(self.buffer[:scast_length])
       self.buffer = self.buffer[scast_length:]
+      self.log_buffer('after')
       processed_reading = True
     return processed_reading
+
+  def log_buffer(self, when):
+    log_time = datetime.now()
+    with open("{}/{:%Y%m%d}.txt".format(self.log_directory, log_time), 'a+') as f:
+      f.write("\n\nSCAST buffer at {:%d-%m-%Y %H:%M:%S}\n {} processing".format(log_time, when))
+      f.write(' ' * 12)
+      f.write(self.buffer)
+      f.write("\n")
+      if (when == 'after'):
+        f.write('-' * 80)
+        f.write('\n\n')      
+
 
