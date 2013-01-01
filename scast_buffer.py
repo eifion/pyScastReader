@@ -28,15 +28,18 @@ class ScastBuffer:
     while True:
       start = self.buffer.find(self.SCAST_TOKEN)
       if start == -1:
+        self.log_error("SCAST token not found.")
         break
 
       self.buffer = self.buffer[start:]
       if len(self.buffer) < self.READING_COUNT_END:
+        self.log_error("Buffer not long enough for reading count ({0} chars).".format(len(self.buffer)))
         break
 
       # If no comma found then the unit hasn't reported its readings so discard this SCAST.
       if self.buffer[self.COMMA_START:self.COMMA_END] != self.COMMA:
-        self.buffer = self.buffer[self.READING_COUNT_END]
+        self.buffer = self.buffer[self.READING_COUNT_END:]
+        self.log_error("Comma token not found.")
         break
 
       reading_data_length = int(self.buffer[self.READING_COUNT_START:self.READING_COUNT_END].decode('hex'), 16)
@@ -44,6 +47,7 @@ class ScastBuffer:
 
       scast_length = self.READING_DATA_START + (self.READING_DATA_LENGTH * reading_count)
       if len(self.buffer) < scast_length:
+        self.log_error("Buffer not long enough for readings ({0} chars).".format(len(self.buffer)))
         break
 
       scast = Scast(self.buffer[:scast_length])
@@ -62,5 +66,10 @@ class ScastBuffer:
       if (when == 'after'):
         f.write('-' * 80)
         f.write('\n\n')      
+
+  def log_error(self, message):
+    log_time = datetime.now()
+    with open("{}/{:%Y%m%d}.txt".format(self.log_directory, log_time), 'a+') as f:
+      f.write("Buffer not processed: {0}".format(message))
 
 
