@@ -38,9 +38,9 @@ class ScastBuffer:
 
       # If no comma found then the unit hasn't reported its readings so discard this line of data.
       if self.buffer[self.COMMA_START:self.COMMA_END] != self.COMMA:
-        next_crlf =  self.buffer.find(self.CR_LF)
+        next_crlf =  self.buffer.find(self.CR_LF, self.COMMA_START)
         if (next_crlf) != -1:
-          self.buffer = self.buffer[next_crlf + 4]
+          self.buffer = self.buffer[next_crlf:]
         self.log_error("Comma token not found.")
         break
 
