@@ -4,7 +4,7 @@
 
 -- Dumped from database version 9.1.6
 -- Dumped by pg_dump version 9.2.2
--- Started on 2012-12-30 17:04:23 GMT
+-- Started on 2013-01-03 17:24:13 GMT
 
 SET statement_timeout = 0;
 SET client_encoding = 'UTF8';
@@ -13,7 +13,7 @@ SET check_function_bodies = false;
 SET client_min_messages = warning;
 
 --
--- TOC entry 1926 (class 1262 OID 24617)
+-- TOC entry 1946 (class 1262 OID 24617)
 -- Name: pyppm; Type: DATABASE; Schema: -; Owner: pyppm
 --
 
@@ -31,7 +31,7 @@ SET check_function_bodies = false;
 SET client_min_messages = warning;
 
 --
--- TOC entry 174 (class 3079 OID 11645)
+-- TOC entry 176 (class 3079 OID 11645)
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
 --
 
@@ -39,8 +39,8 @@ CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
 
 
 --
--- TOC entry 1929 (class 0 OID 0)
--- Dependencies: 174
+-- TOC entry 1949 (class 0 OID 0)
+-- Dependencies: 176
 -- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: 
 --
 
@@ -50,21 +50,23 @@ COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 SET search_path = public, pg_catalog;
 
 --
--- TOC entry 500 (class 1247 OID 24619)
+-- TOC entry 502 (class 1247 OID 24619)
 -- Name: comparator; Type: TYPE; Schema: public; Owner: postgres
 --
 
 CREATE TYPE comparator AS ENUM (
     'lt',
+    'lte',
     'eq',
-    'gt'
+    'gt',
+    'gte'
 );
 
 
 ALTER TYPE public.comparator OWNER TO postgres;
 
 --
--- TOC entry 531 (class 1247 OID 24744)
+-- TOC entry 533 (class 1247 OID 24744)
 -- Name: timedreadings; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -77,7 +79,7 @@ CREATE TYPE timedreadings AS (
 ALTER TYPE public.timedreadings OWNER TO postgres;
 
 --
--- TOC entry 503 (class 1247 OID 24627)
+-- TOC entry 505 (class 1247 OID 24627)
 -- Name: unitandrelaystates; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -90,7 +92,7 @@ CREATE TYPE unitandrelaystates AS (
 ALTER TYPE public.unitandrelaystates OWNER TO postgres;
 
 --
--- TOC entry 186 (class 1255 OID 24628)
+-- TOC entry 192 (class 1255 OID 24628)
 -- Name: AddReading(character, character, integer, integer, integer, numeric); Type: FUNCTION; Schema: public; Owner: pyppm
 --
 
@@ -101,6 +103,7 @@ DECLARE
   _unit_id   integer;
   _sensor_id integer;
   _current_time timestamp with time zone;
+  _sensortype_defaultalarmthreshold sensortypes_defaultalarmthresholds%ROWTYPE;
 BEGIN
   -- Insert or update unit.
   _current_time := current_timestamp; -- So that all times are the same.
@@ -143,6 +146,12 @@ BEGIN
     INSERT INTO sensors(unit_id, type_id, created_at, last_modified_at)
     VALUES(_unit_id, sensortypeid, _current_time, _current_time)
     RETURNING id INTO _sensor_id;
+
+    -- Loop through each alarm type and add an alarm.
+    FOR _sensortype_defaultalarmthreshold IN SELECT * FROM sensortypes_defaultalarmthresholds WHERE sensortype_id = sensortypeid LOOP
+	INSERT INTO alarms(alarmtype_id, sensor_id, threshold, thresholdtype, relay_id, created_at, last_modified_at)
+	VALUES(_sensortype_defaultalarmthreshold.alarmtype_id, _sensor_id, _sensortype_defaultalarmthreshold.threshold, _sensortype_defaultalarmthreshold.thresholdtype, NULL, current_timestamp, current_timestamp);
+    END LOOP;    
   ELSE
     UPDATE sensors 
     SET last_modified_at = _current_time
@@ -204,7 +213,7 @@ $$;
 ALTER FUNCTION public."GetReadingsForSensor"(sensorid integer, intervalhours integer) OWNER TO pyppm;
 
 --
--- TOC entry 187 (class 1255 OID 24629)
+-- TOC entry 188 (class 1255 OID 24629)
 -- Name: GetRelayStates(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -224,7 +233,7 @@ $$;
 ALTER FUNCTION public."GetRelayStates"() OWNER TO postgres;
 
 --
--- TOC entry 188 (class 1255 OID 24630)
+-- TOC entry 191 (class 1255 OID 24630)
 -- Name: UpdateRelaysForReading(integer, numeric); Type: FUNCTION; Schema: public; Owner: pyppm
 --
 
@@ -239,9 +248,9 @@ FROM alarms a
 INNER JOIN sensors s
 ON s.id = a.sensor_id
 WHERE s.id = $1
-AND (a.triggertype = 'gt' AND $2 > a.triggerlevel)
-OR  (a.triggertype = 'eq' AND $2 = a.triggerlevel)
-OR  (a.triggertype = 'lt' AND $2 < a.triggerlevel));
+AND (a.thresholdtype = 'gt' AND $2 > a.threshold)
+OR  (a.thresholdtype = 'eq' AND $2 = a.threshold)
+OR  (a.thresholdtype = 'lt' AND $2 < a.threshold));
 
 UPDATE relays 
 SET state = 0::bit, last_modified_at = current_timestamp 
@@ -251,9 +260,9 @@ FROM alarms a
 INNER JOIN sensors s
 ON s.id = a.sensor_id
 WHERE s.id = $1
-AND (a.triggertype = 'gt' AND $2 <  a.triggerlevel)
-OR  (a.triggertype = 'eq' AND $2 != a.triggerlevel)
-OR  (a.triggertype = 'lt' AND $2 >  a.triggerlevel));
+AND (a.thresholdtype = 'gt' AND $2 <  a.threshold)
+OR  (a.thresholdtype = 'eq' AND $2 != a.threshold)
+OR  (a.thresholdtype = 'lt' AND $2 >  a.threshold));
 $_$;
 
 
@@ -271,8 +280,8 @@ SET default_with_oids = false;
 CREATE TABLE alarms (
     alarmtype_id integer NOT NULL,
     sensor_id integer NOT NULL,
-    triggerlevel numeric NOT NULL,
-    triggertype comparator NOT NULL,
+    threshold numeric NOT NULL,
+    thresholdtype comparator NOT NULL,
     relay_id integer,
     created_at timestamp with time zone,
     last_modified_at timestamp with time zone
@@ -310,7 +319,7 @@ CREATE SEQUENCE alarmtypes_id_seq
 ALTER TABLE public.alarmtypes_id_seq OWNER TO pyppm;
 
 --
--- TOC entry 1930 (class 0 OID 0)
+-- TOC entry 1950 (class 0 OID 0)
 -- Dependencies: 164
 -- Name: alarmtypes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: pyppm
 --
@@ -350,7 +359,7 @@ CREATE SEQUENCE readings_id_seq
 ALTER TABLE public.readings_id_seq OWNER TO pyppm;
 
 --
--- TOC entry 1931 (class 0 OID 0)
+-- TOC entry 1951 (class 0 OID 0)
 -- Dependencies: 166
 -- Name: readings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: pyppm
 --
@@ -391,7 +400,7 @@ CREATE SEQUENCE relays_id_seq
 ALTER TABLE public.relays_id_seq OWNER TO pyppm;
 
 --
--- TOC entry 1932 (class 0 OID 0)
+-- TOC entry 1952 (class 0 OID 0)
 -- Dependencies: 168
 -- Name: relays_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: pyppm
 --
@@ -416,7 +425,7 @@ CREATE TABLE sensors (
 ALTER TABLE public.sensors OWNER TO pyppm;
 
 --
--- TOC entry 1933 (class 0 OID 0)
+-- TOC entry 1953 (class 0 OID 0)
 -- Dependencies: 169
 -- Name: COLUMN sensors.type_id; Type: COMMENT; Schema: public; Owner: pyppm
 --
@@ -440,12 +449,56 @@ CREATE SEQUENCE sensors_id_seq
 ALTER TABLE public.sensors_id_seq OWNER TO pyppm;
 
 --
--- TOC entry 1934 (class 0 OID 0)
+-- TOC entry 1954 (class 0 OID 0)
 -- Dependencies: 170
 -- Name: sensors_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: pyppm
 --
 
 ALTER SEQUENCE sensors_id_seq OWNED BY sensors.id;
+
+
+--
+-- TOC entry 174 (class 1259 OID 24830)
+-- Name: sensortypes; Type: TABLE; Schema: public; Owner: pyppm; Tablespace: 
+--
+
+CREATE TABLE sensortypes (
+    sensortypeid integer NOT NULL,
+    resolution numeric NOT NULL,
+    minrange integer NOT NULL,
+    maxrange integer NOT NULL,
+    name character varying(255) NOT NULL,
+    shortname character varying(32) NOT NULL,
+    measurementunit character varying(16) NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    last_modified_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.sensortypes OWNER TO pyppm;
+
+--
+-- TOC entry 175 (class 1259 OID 24862)
+-- Name: sensortypes_defaultalarmthresholds; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE sensortypes_defaultalarmthresholds (
+    alarmtype_id integer NOT NULL,
+    sensortype_id integer NOT NULL,
+    thresholdtype comparator NOT NULL,
+    threshold numeric
+);
+
+
+ALTER TABLE public.sensortypes_defaultalarmthresholds OWNER TO postgres;
+
+--
+-- TOC entry 1955 (class 0 OID 0)
+-- Dependencies: 175
+-- Name: TABLE sensortypes_defaultalarmthresholds; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON TABLE sensortypes_defaultalarmthresholds IS 'This table holds the default alarm thresholds for each alarm type. These are copied to the alarms table for a sensor type when a sensor of that type appears and is added to the alarms table. ';
 
 
 --
@@ -480,7 +533,7 @@ CREATE SEQUENCE units_id_seq
 ALTER TABLE public.units_id_seq OWNER TO pyppm;
 
 --
--- TOC entry 1935 (class 0 OID 0)
+-- TOC entry 1956 (class 0 OID 0)
 -- Dependencies: 172
 -- Name: units_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: pyppm
 --
@@ -489,7 +542,7 @@ ALTER SEQUENCE units_id_seq OWNED BY units.id;
 
 
 --
--- TOC entry 1898 (class 2604 OID 24665)
+-- TOC entry 1908 (class 2604 OID 24665)
 -- Name: id; Type: DEFAULT; Schema: public; Owner: pyppm
 --
 
@@ -497,7 +550,7 @@ ALTER TABLE ONLY alarmtypes ALTER COLUMN id SET DEFAULT nextval('alarmtypes_id_s
 
 
 --
--- TOC entry 1899 (class 2604 OID 24666)
+-- TOC entry 1909 (class 2604 OID 24666)
 -- Name: id; Type: DEFAULT; Schema: public; Owner: pyppm
 --
 
@@ -505,7 +558,7 @@ ALTER TABLE ONLY readings ALTER COLUMN id SET DEFAULT nextval('readings_id_seq':
 
 
 --
--- TOC entry 1900 (class 2604 OID 24667)
+-- TOC entry 1910 (class 2604 OID 24667)
 -- Name: id; Type: DEFAULT; Schema: public; Owner: pyppm
 --
 
@@ -513,7 +566,7 @@ ALTER TABLE ONLY relays ALTER COLUMN id SET DEFAULT nextval('relays_id_seq'::reg
 
 
 --
--- TOC entry 1901 (class 2604 OID 24668)
+-- TOC entry 1911 (class 2604 OID 24668)
 -- Name: id; Type: DEFAULT; Schema: public; Owner: pyppm
 --
 
@@ -521,7 +574,7 @@ ALTER TABLE ONLY sensors ALTER COLUMN id SET DEFAULT nextval('sensors_id_seq'::r
 
 
 --
--- TOC entry 1902 (class 2604 OID 24669)
+-- TOC entry 1912 (class 2604 OID 24669)
 -- Name: id; Type: DEFAULT; Schema: public; Owner: pyppm
 --
 
@@ -529,7 +582,7 @@ ALTER TABLE ONLY units ALTER COLUMN id SET DEFAULT nextval('units_id_seq'::regcl
 
 
 --
--- TOC entry 1904 (class 2606 OID 24671)
+-- TOC entry 1916 (class 2606 OID 24671)
 -- Name: pk_alarms; Type: CONSTRAINT; Schema: public; Owner: pyppm; Tablespace: 
 --
 
@@ -538,7 +591,7 @@ ALTER TABLE ONLY alarms
 
 
 --
--- TOC entry 1906 (class 2606 OID 24673)
+-- TOC entry 1918 (class 2606 OID 24673)
 -- Name: pk_alarmtypes; Type: CONSTRAINT; Schema: public; Owner: pyppm; Tablespace: 
 --
 
@@ -547,7 +600,7 @@ ALTER TABLE ONLY alarmtypes
 
 
 --
--- TOC entry 1908 (class 2606 OID 24675)
+-- TOC entry 1920 (class 2606 OID 24675)
 -- Name: pk_readings; Type: CONSTRAINT; Schema: public; Owner: pyppm; Tablespace: 
 --
 
@@ -556,7 +609,7 @@ ALTER TABLE ONLY readings
 
 
 --
--- TOC entry 1911 (class 2606 OID 24677)
+-- TOC entry 1923 (class 2606 OID 24677)
 -- Name: pk_relays; Type: CONSTRAINT; Schema: public; Owner: pyppm; Tablespace: 
 --
 
@@ -565,7 +618,7 @@ ALTER TABLE ONLY relays
 
 
 --
--- TOC entry 1913 (class 2606 OID 24679)
+-- TOC entry 1926 (class 2606 OID 24679)
 -- Name: pk_sensors; Type: CONSTRAINT; Schema: public; Owner: pyppm; Tablespace: 
 --
 
@@ -574,7 +627,25 @@ ALTER TABLE ONLY sensors
 
 
 --
--- TOC entry 1915 (class 2606 OID 24681)
+-- TOC entry 1930 (class 2606 OID 24837)
+-- Name: pk_sensortypes; Type: CONSTRAINT; Schema: public; Owner: pyppm; Tablespace: 
+--
+
+ALTER TABLE ONLY sensortypes
+    ADD CONSTRAINT pk_sensortypes PRIMARY KEY (sensortypeid);
+
+
+--
+-- TOC entry 1932 (class 2606 OID 24873)
+-- Name: pk_sensortypes_defaultalarmthresholds; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY sensortypes_defaultalarmthresholds
+    ADD CONSTRAINT pk_sensortypes_defaultalarmthresholds PRIMARY KEY (alarmtype_id, sensortype_id);
+
+
+--
+-- TOC entry 1928 (class 2606 OID 24681)
 -- Name: pk_units; Type: CONSTRAINT; Schema: public; Owner: pyppm; Tablespace: 
 --
 
@@ -583,7 +654,15 @@ ALTER TABLE ONLY units
 
 
 --
--- TOC entry 1909 (class 1259 OID 24741)
+-- TOC entry 1924 (class 1259 OID 24843)
+-- Name: fki_pk_sensor_sensortypes; Type: INDEX; Schema: public; Owner: pyppm; Tablespace: 
+--
+
+CREATE INDEX fki_pk_sensor_sensortypes ON sensors USING btree (type_id);
+
+
+--
+-- TOC entry 1921 (class 1259 OID 24741)
 -- Name: readings_minute; Type: INDEX; Schema: public; Owner: pyppm; Tablespace: 
 --
 
@@ -591,7 +670,7 @@ CREATE INDEX readings_minute ON readings USING btree (date_trunc('minute'::text,
 
 
 --
--- TOC entry 1916 (class 2606 OID 24682)
+-- TOC entry 1933 (class 2606 OID 24682)
 -- Name: fk_alarms_alarmtype; Type: FK CONSTRAINT; Schema: public; Owner: pyppm
 --
 
@@ -600,7 +679,7 @@ ALTER TABLE ONLY alarms
 
 
 --
--- TOC entry 1917 (class 2606 OID 24687)
+-- TOC entry 1934 (class 2606 OID 24687)
 -- Name: fk_alarms_relay; Type: FK CONSTRAINT; Schema: public; Owner: pyppm
 --
 
@@ -609,7 +688,7 @@ ALTER TABLE ONLY alarms
 
 
 --
--- TOC entry 1918 (class 2606 OID 24692)
+-- TOC entry 1935 (class 2606 OID 24692)
 -- Name: fk_alarms_sensor; Type: FK CONSTRAINT; Schema: public; Owner: pyppm
 --
 
@@ -618,7 +697,7 @@ ALTER TABLE ONLY alarms
 
 
 --
--- TOC entry 1920 (class 2606 OID 24697)
+-- TOC entry 1937 (class 2606 OID 24697)
 -- Name: fk_relays_unit; Type: FK CONSTRAINT; Schema: public; Owner: pyppm
 --
 
@@ -627,7 +706,7 @@ ALTER TABLE ONLY relays
 
 
 --
--- TOC entry 1919 (class 2606 OID 24702)
+-- TOC entry 1936 (class 2606 OID 24702)
 -- Name: fk_sensor; Type: FK CONSTRAINT; Schema: public; Owner: pyppm
 --
 
@@ -636,7 +715,25 @@ ALTER TABLE ONLY readings
 
 
 --
--- TOC entry 1921 (class 2606 OID 24707)
+-- TOC entry 1941 (class 2606 OID 24879)
+-- Name: fk_sensortypes_defaultalarmthresholds_alarmtypes; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY sensortypes_defaultalarmthresholds
+    ADD CONSTRAINT fk_sensortypes_defaultalarmthresholds_alarmtypes FOREIGN KEY (alarmtype_id) REFERENCES alarmtypes(id);
+
+
+--
+-- TOC entry 1940 (class 2606 OID 24874)
+-- Name: fk_sensortypes_defaultalarmthresholds_sensortypes; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY sensortypes_defaultalarmthresholds
+    ADD CONSTRAINT fk_sensortypes_defaultalarmthresholds_sensortypes FOREIGN KEY (sensortype_id) REFERENCES sensortypes(sensortypeid);
+
+
+--
+-- TOC entry 1938 (class 2606 OID 24707)
 -- Name: fk_unit; Type: FK CONSTRAINT; Schema: public; Owner: pyppm
 --
 
@@ -645,7 +742,16 @@ ALTER TABLE ONLY sensors
 
 
 --
--- TOC entry 1928 (class 0 OID 0)
+-- TOC entry 1939 (class 2606 OID 24838)
+-- Name: pk_sensor_sensortypes; Type: FK CONSTRAINT; Schema: public; Owner: pyppm
+--
+
+ALTER TABLE ONLY sensors
+    ADD CONSTRAINT pk_sensor_sensortypes FOREIGN KEY (type_id) REFERENCES sensortypes(sensortypeid);
+
+
+--
+-- TOC entry 1948 (class 0 OID 0)
 -- Dependencies: 6
 -- Name: public; Type: ACL; Schema: -; Owner: postgres
 --
@@ -657,7 +763,7 @@ GRANT ALL ON SCHEMA public TO pyppm;
 GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
--- Completed on 2012-12-30 17:04:26 GMT
+-- Completed on 2013-01-03 17:24:18 GMT
 
 --
 -- PostgreSQL database dump complete
