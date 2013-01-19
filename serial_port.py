@@ -18,7 +18,7 @@ class SerialPort:
       chars = ""
       while self.ser.inWaiting() > 0:
         chars += self.ser.read(1).encode('hex')
-      if buffer.add(chars):
+      if len(chars) > 0 and buffer.add(chars):
         self.process_alarms_and_relays()
       sleep(1)
 
