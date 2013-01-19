@@ -4,7 +4,7 @@
 
 -- Dumped from database version 9.1.6
 -- Dumped by pg_dump version 9.2.2
--- Started on 2013-01-19 10:26:02 GMT
+-- Started on 2013-01-19 10:29:57 GMT
 
 SET statement_timeout = 0;
 SET client_encoding = 'UTF8';
@@ -15,7 +15,26 @@ SET client_min_messages = warning;
 SET search_path = public, pg_catalog;
 
 --
--- TOC entry 1904 (class 0 OID 24830)
+-- TOC entry 1907 (class 0 OID 24637)
+-- Dependencies: 163
+-- Data for Name: alarmtypes; Type: TABLE DATA; Schema: public; Owner: pyppm
+--
+
+INSERT INTO alarmtypes (id, title) VALUES (1, 'ceiling');
+INSERT INTO alarmtypes (id, title) VALUES (2, 'intermediate');
+
+
+--
+-- TOC entry 1917 (class 0 OID 0)
+-- Dependencies: 164
+-- Name: alarmtypes_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pyppm
+--
+
+SELECT pg_catalog.setval('alarmtypes_id_seq', 2, true);
+
+
+--
+-- TOC entry 1909 (class 0 OID 24830)
 -- Dependencies: 174
 -- Data for Name: sensortypes; Type: TABLE DATA; Schema: public; Owner: pyppm
 --
@@ -32,7 +51,7 @@ INSERT INTO sensortypes (sensortypeid, resolution, minrange, maxrange, name, sho
 
 
 --
--- TOC entry 1905 (class 0 OID 24862)
+-- TOC entry 1910 (class 0 OID 24862)
 -- Dependencies: 175
 -- Data for Name: sensortypes_defaultalarmthresholds; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -57,7 +76,7 @@ INSERT INTO sensortypes_defaultalarmthresholds (alarmtype_id, sensortype_id, thr
 INSERT INTO sensortypes_defaultalarmthresholds (alarmtype_id, sensortype_id, thresholdtype, threshold) VALUES (2, 4, 'gte', 0.15);
 
 
--- Completed on 2013-01-19 10:26:04 GMT
+-- Completed on 2013-01-19 10:30:00 GMT
 
 --
 -- PostgreSQL database dump complete
