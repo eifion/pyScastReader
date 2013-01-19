@@ -10,7 +10,8 @@ class SerialPort:
       baudrate = 19200,
       parity = serial.PARITY_NONE,
       stopbits = serial.STOPBITS_ONE,
-      bytesize = serial.EIGHTBITS)
+      bytesize = serial.EIGHTBITS,
+      xonxoff = True)
 
 
     buffer = ScastBuffer()

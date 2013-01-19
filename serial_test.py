@@ -14,8 +14,8 @@ def find_stick_and_start_reading_from_it():
     exit()
 
 def run():
-  #with daemon.DaemonContext():
-  find_stick_and_start_reading_from_it() 
+  with daemon.DaemonContext():
+    find_stick_and_start_reading_from_it() 
 
 if __name__== "__main__":
   run()
