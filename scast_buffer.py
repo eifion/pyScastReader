@@ -59,6 +59,8 @@ class ScastBuffer:
 
       scast = Scast(self.buffer[:scast_length])
       self.buffer = self.buffer[scast_length:]
+      if (self.buffer == self.CR_LF):
+        self.buffer = ""
       self.log_buffer('after')
       processed_reading = True
     return processed_reading
