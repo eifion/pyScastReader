@@ -48,8 +48,8 @@ INSERT INTO sensortypes (sensortypeid, resolution, minrange, maxrange, name, sho
 INSERT INTO sensortypes (sensortypeid, resolution, minrange, maxrange, name, shortname, measurementunit, created_at, last_modified_at) VALUES (7, 0.001, 0, 100, 'Carbon Monoxide', 'CO', 'PPM', '2013-01-03 12:55:08.94304+00', '2013-01-03 12:55:44.988024+00');
 INSERT INTO sensortypes (sensortypeid, resolution, minrange, maxrange, name, shortname, measurementunit, created_at, last_modified_at) VALUES (18, 0.001, 0, 5, 'Nitrogen Dioxide', 'NO₂', 'PPM', '2013-01-03 12:55:08.94304+00', '2013-01-03 12:55:44.988024+00');
 INSERT INTO sensortypes (sensortypeid, resolution, minrange, maxrange, name, shortname, measurementunit, created_at, last_modified_at) VALUES (26, 0.001, 0, 20, 'TVOC Silver', 'TVOC', 'PPM', '2013-01-03 12:55:08.94304+00', '2013-01-03 12:55:44.988024+00');
-
-
+INSERT INTO sensortypes (sensortypeid, resolution, minrange, maxrange, name, shortname, measurementunit, created_at, last_modified_at) VALUES (40, 0.1, 0, 1, 'Smoke', 'Smoke', 'SD', '2013-07-05 17:00:00:00+00', '2013-07-05 17:00:00:00+00');
+INSERT INTO sensortypes (sensortypeid, resolution, minrange, maxrange, name, shortname, measurementunit, created_at, last_modified_at) VALUES (42, 0.1, 0, 1, 'PIR Motion', 'PIR', 'Motion', '2013-07-05 17:00:00:00+00', '2013-07-05 17:00:00:00+00');
 --
 -- TOC entry 2014 (class 0 OID 17481)
 -- Dependencies: 177
@@ -74,6 +74,10 @@ INSERT INTO sensortypes_defaultalarmthresholds (alarmtype_id, sensortype_id, thr
 INSERT INTO sensortypes_defaultalarmthresholds (alarmtype_id, sensortype_id, thresholdtype, threshold) VALUES (2, 18, 'gte', 0.08);
 INSERT INTO sensortypes_defaultalarmthresholds (alarmtype_id, sensortype_id, thresholdtype, threshold) VALUES (1, 4, 'gte', 0.2);
 INSERT INTO sensortypes_defaultalarmthresholds (alarmtype_id, sensortype_id, thresholdtype, threshold) VALUES (2, 4, 'gte', 0.15);
+INSERT INTO sensortypes_defaultalarmthresholds (alarmtype_id, sensortype_id, thresholdtype, threshold) VALUES (1, 40, 'gte', 1);
+INSERT INTO sensortypes_defaultalarmthresholds (alarmtype_id, sensortype_id, thresholdtype, threshold) VALUES (2, 40, 'gte', 0.6);
+INSERT INTO sensortypes_defaultalarmthresholds (alarmtype_id, sensortype_id, thresholdtype, threshold) VALUES (1, 42, 'gte', 1);
+INSERT INTO sensortypes_defaultalarmthresholds (alarmtype_id, sensortype_id, thresholdtype, threshold) VALUES (2, 42, 'gte', 0.6);
 
 
 -- Completed on 2013-01-20 12:32:04 GMT
